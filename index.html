@@ -288,8 +288,10 @@ function speak(who, text) {
     try {
       const u = new SpeechSynthesisUtterance(clean);
       const v = VOICES[who] || { pitch: 1, rate: 1 };
-      u.pitch = v.pitch; u.rate = v.rate; u.lang = "en-US";
-      if (enVoice) u.voice = enVoice;
+      u.pitch = v.pitch; u.rate = v.rate; u.lang = "en-US"; u.volume = 1;
+      // NOTE: deliberately NOT setting u.voice — assigning a specific voice
+      // object makes iOS Safari silently fail. lang alone uses the default
+      // en-US voice, which is exactly what worked in the sound test.
       speechSynthesis.speak(u);
       speechSynthesis.resume();
     } catch (e) {}
