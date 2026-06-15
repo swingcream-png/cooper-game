@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Test</title>
+<style>
+  body { font-family: -apple-system, sans-serif; margin: 0; padding: 16px; background: #1a1a40; color: #fff; }
+  h1 { font-size: 20px; }
+  button { display: block; width: 100%; font-size: 22px; font-weight: 800; padding: 18px; margin: 10px 0;
+    border: 0; border-radius: 14px; background: #ffd23f; color: #222; }
+  button:active { opacity: .7; }
+  #log { background: #000; color: #4f8; font: 13px/1.4 monospace; padding: 12px; border-radius: 10px;
+    white-space: pre-wrap; min-height: 200px; margin-top: 14px; }
+  .info { font-size: 14px; opacity: .85; }
+</style>
+</head>
+<body>
+<h1>🔊 Sergeant Cooper — Sound Test</h1>
+<p class="info">按顺序点下面 4 个按钮，把黑框里出现的文字告诉我。耳朵也注意听每个按钮有没有声音。</p>
+
+<button id="b1">① 哔一声（音效测试）</button>
+<button id="b2">② 说 "Hello"（语音测试）</button>
+<button id="b3">③ 说一句长的（中途测试）</button>
+<button id="b4">④ 列出可用语音</button>
+
+<div id="log">等待…</div>
+
+<script>
+const log = document.getElementById("log");
+let lines = [];
+function L(s) { lines.unshift("• " + s); log.textContent = lines.join("\n"); }
+
+// ---- WebAudio beep ----
+let AC = null;
+document.getElementById("b1").addEventListener("click", () => {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    AC.resume().then(() => L("AudioContext state = " + AC.state));
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.value = 660; g.gain.value = 0.2;
+    o.connect(g); g.connect(AC.destination);
+    o.start(); o.stop(AC.currentTime + 0.5);
+    L("① 哔 已触发（state=" + AC.state + "）→ 听到了吗？");
+  } catch (e) { L("① 出错: " + e.message); }
+});
+
+// ---- speechSynthesis short ----
+function trySpeak(text, tag) {
+  if (!("speechSynthesis" in window)) { L(tag + " ✗ 这台不支持 speechSynthesis"); return; }
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.rate = 0.95; u.volume = 1;
+    u.onstart = () => L(tag + " ▶ onstart 触发（引擎开始说了）");
+    u.onend   = () => L(tag + " ■ onend 触发（说完了）");
+    u.onerror = (e) => L(tag + " ✗ onerror = " + (e.error || "unknown"));
+    speechSynthesis.speak(u);
+    speechSynthesis.resume();
+    L(tag + " 已调用 speak()，speaking=" + speechSynthesis.speaking + " pending=" + speechSynthesis.pending + " paused=" + speechSynthesis.paused);
+  } catch (e) { L(tag + " 出错: " + e.message); }
+}
+document.getElementById("b2").addEventListener("click", () => trySpeak("Hello! Can you hear me?", "②"));
+document.getElementById("b3").addEventListener("click", () =>
+  trySpeak("My name is Cooper, and I am a real city hero. Did you hear this whole sentence?", "③"));
+
+// ---- list voices ----
+document.getElementById("b4").addEventListener("click", () => {
+  if (!("speechSynthesis" in window)) { L("④ ✗ 不支持 speechSynthesis"); return; }
+  const vs = speechSynthesis.getVoices();
+  L("④ 共 " + vs.length + " 个语音");
+  const en = vs.filter(v => /^en/i.test(v.lang)).slice(0, 6).map(v => v.name + " (" + v.lang + ")");
+  L("④ 英文语音示例: " + (en.join(", ") || "无！"));
+});
+
+L("UA: " + navigator.userAgent);
+L("speechSynthesis 支持: " + ("speechSynthesis" in window));
+if ("speechSynthesis" in window) {
+  speechSynthesis.onvoiceschanged = () => L("voiceschanged: 现在有 " + speechSynthesis.getVoices().length + " 个语音");
+}
+</script>
+</body>
+</html>
