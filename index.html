@@ -232,7 +232,11 @@ const stage = $("#stage");
 
 /* ---------- tiny sounds (WebAudio) ---------- */
 let AC = null;
-function ac() { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); return AC; }
+function ac() {
+  if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === "suspended") AC.resume(); // iOS starts the context suspended
+  return AC;
+}
 function tone(freq, dur, type = "sine", vol = .15, when = 0) {
   try {
     const a = ac(), o = a.createOscillator(), g = a.createGain();
@@ -287,6 +291,7 @@ function speak(who, text) {
     u.pitch = v.pitch; u.rate = v.rate; u.lang = "en-US";
     if (enVoice) u.voice = enVoice;
     speechSynthesis.speak(u);
+    speechSynthesis.resume(); // iOS sometimes leaves the queue paused
   } catch (e) {}
 }
 function stopSpeak() { try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {} }
@@ -652,9 +657,14 @@ $("#voicebtn").addEventListener("pointerdown", e => {
 });
 $("#startbtn").addEventListener("pointerdown", () => {
   ac(); siren();
-  // iOS unlocks speechSynthesis only inside a user gesture — warm it up here
+  // iOS unlocks speechSynthesis ONLY when speak() runs inside a real tap.
+  // Speak a tiny real utterance here to prime the engine for the rest of the game.
   if ("speechSynthesis" in window) {
-    try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+    try {
+      speechSynthesis.cancel();
+      speechSynthesis.speak(new SpeechSynthesisUtterance("Sergeant Cooper"));
+      speechSynthesis.resume();
+    } catch (e) {}
   }
   ch1();
 });

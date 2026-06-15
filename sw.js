@@ -1,7 +1,7 @@
 // Sergeant Cooper — offline cache
 // The game is a single self-contained index.html, so caching the page
 // (plus the manifest/icon) is enough to play with no network at all.
-const CACHE = "cooper-v1";
+const CACHE = "cooper-v2";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.png"];
 
 self.addEventListener("install", (e) => {
